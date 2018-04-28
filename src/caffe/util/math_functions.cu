@@ -9,6 +9,183 @@
 #include "caffe/util/math_functions.hpp"
 
 namespace caffe {
+  __global__ void mat_mul_N_N(int m, int k ,int n, float alpha, float beta, const float *a, const float *b, float *ab) {
+    // calculate the row & col index of the element
+    int row = blockIdx.y*blockDim.y + threadIdx.y;
+    int col = blockIdx.x*blockDim.x + threadIdx.x;
+    float result = 0;
+    if (row < m && col < n) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < k; index++)
+        result += a[row*k + index] * b[index*n + col];
+  
+      ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+  
+    }
+  }
+  
+  __global__ void mat_mul_N_T(int m, int k ,int n, float alpha, float beta, const float *a, const float *b, float *ab) {
+    // calculate the row & col index of the element
+    int row = blockIdx.y*blockDim.y + threadIdx.y;
+    int col = blockIdx.x*blockDim.x + threadIdx.x;
+    float result = 0;
+    if (row < m && col < n) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < k; index++)
+        result += a[row*k + index] * b[col*k + index];
+  
+      ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+  
+    }
+  }
+  
+  __global__ void mat_mul_T_N(int m, int k ,int n, float alpha, float beta, const float *a, const float *b, float *ab) {
+    // calculate the row & col index of the element
+    int row = blockIdx.y*blockDim.y + threadIdx.y;
+    int col = blockIdx.x*blockDim.x + threadIdx.x;
+    float result = 0;
+    if (row < m && col < n) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < k; index++)
+        result += a[index*m + row] * b[index*n + col];
+  
+      ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+  
+    }
+  }
+  
+  __global__ void mat_mul_T_T(int m, int k ,int n, float alpha, float beta, const float *a, const float *b, float *ab) {
+    // calculate the row & col index of the element
+    int row = blockIdx.y*blockDim.y + threadIdx.y;
+    int col = blockIdx.x*blockDim.x + threadIdx.x;
+    float result = 0;
+    if (row < m && col < n) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < k; index++)
+        result += a[index*m + row] * b[col*k + index];
+  
+      ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+  
+    }
+  }
+  
+  
+  __global__ void mat_vec_N(int m, int n, float alpha, float beta, const float *a, const float *x ,float *y) {
+    // calculate the row & col index of the element
+    int row = blockIdx.x*blockDim.x + threadIdx.x;
+    float result = 0;
+    if (row < m) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < n; index++)
+        result += a[row*n + index] * x[index];
+  
+      y[row] = alpha * result + beta * y[row];
+  
+    }
+  }
+  
+  __global__ void mat_vec_T(int m, int n, float alpha, float beta, const float *a, const float *x ,float *y) {
+    // calculate the row & col index of the element
+    int row = blockIdx.x*blockDim.x + threadIdx.x;
+    float result = 0;
+    if (row < m) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < n; index++)
+        result += a[index*m + row] * x[index];
+  
+      y[row] = alpha * result + beta * y[row];
+  
+    }
+  }
+
+  __global__ void double_mat_mul_N_N(int m, int k ,int n, double alpha, double beta, const double *a, const double *b, double *ab) {
+    // calculate the row & col index of the element
+    int row = blockIdx.y*blockDim.y + threadIdx.y;
+    int col = blockIdx.x*blockDim.x + threadIdx.x;
+    double result = 0;
+    if (row < m && col < n) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < k; index++)
+        result += a[row*k + index] * b[index*n + col];
+  
+      ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+  
+    }
+  }
+  
+  __global__ void double_mat_mul_N_T(int m, int k ,int n, double alpha, double beta, const double *a, const double *b, double *ab) {
+    // calculate the row & col index of the element
+    int row = blockIdx.y*blockDim.y + threadIdx.y;
+    int col = blockIdx.x*blockDim.x + threadIdx.x;
+    double result = 0;
+    if (row < m && col < n) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < k; index++)
+        result += a[row*k + index] * b[col*k + index];
+  
+      ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+  
+    }
+  }
+  
+  __global__ void double_mat_mul_T_N(int m, int k ,int n, double alpha, double beta, const double *a, const double *b, double *ab) {
+    // calculate the row & col index of the element
+    int row = blockIdx.y*blockDim.y + threadIdx.y;
+    int col = blockIdx.x*blockDim.x + threadIdx.x;
+    double result = 0;
+    if (row < m && col < n) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < k; index++)
+        result += a[index*m + row] * b[index*n + col];
+  
+      ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+  
+    }
+  }
+  
+  __global__ void double_mat_mul_T_T(int m, int k ,int n, double alpha, double beta, const double *a, const double *b, double *ab) {
+    // calculate the row & col index of the element
+    int row = blockIdx.y*blockDim.y + threadIdx.y;
+    int col = blockIdx.x*blockDim.x + threadIdx.x;
+    double result = 0;
+    if (row < m && col < n) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < k; index++)
+        result += a[index*m + row] * b[col*k + index];
+  
+      ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+  
+    }
+  }
+  
+  
+  __global__ void double_mat_vec_N(int m, int n, double alpha, double beta, const double *a, const double *x ,double *y) {
+    // calculate the row & col index of the element
+    int row = blockIdx.x*blockDim.x + threadIdx.x;
+    double result = 0;
+    if (row < m) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < n; index++)
+        result += a[row*n + index] * x[index];
+  
+      y[row] = alpha * result + beta * y[row];
+  
+    }
+  }
+  
+  __global__ void double_mat_vec_T(int m, int n, double alpha, double beta, const double *a, const double *x ,double *y) {
+    // calculate the row & col index of the element
+    int row = blockIdx.x*blockDim.x + threadIdx.x;
+    double result = 0;
+    if (row < m) {
+      // do dot product between row of a and col of b
+      for (int index = 0; index < n; index++)
+        result += a[index*m + row] * x[index];
+  
+      y[row] = alpha * result + beta * y[row];
+  
+    }
+  }
 
 template <>
 void caffe_gpu_gemm<float>(const CBLAS_TRANSPOSE TransA,
@@ -16,14 +193,25 @@ void caffe_gpu_gemm<float>(const CBLAS_TRANSPOSE TransA,
     const float alpha, const float* A, const float* B, const float beta,
     float* C) {
   // Note that cublas follows fortran order.
-  int lda = (TransA == CblasNoTrans) ? K : M;
-  int ldb = (TransB == CblasNoTrans) ? N : K;
-  cublasOperation_t cuTransA =
-      (TransA == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
-  cublasOperation_t cuTransB =
-      (TransB == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
-  CUBLAS_CHECK(cublasSgemm(Caffe::cublas_handle(), cuTransB, cuTransA,
-      N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
+  // int lda = (TransA == CblasNoTrans) ? K : M;
+  // int ldb = (TransB == CblasNoTrans) ? N : K;
+  //cublasOperation_t cuTransA =
+  //    (TransA == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
+  //cublasOperation_t cuTransB =
+  //    (TransB == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
+      
+	dim3 block(32, 32);
+  dim3 grid((N + 31) / 32, (M + 31) / 32);
+  if(TransA == CblasNoTrans){
+    if(TransB == CblasNoTrans) mat_mul_N_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+    else mat_mul_N_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  }
+  else{
+    if(TransB == CblasNoTrans) mat_mul_T_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+    else mat_mul_T_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  }
+  //CUBLAS_CHECK(cublasSgemm(Caffe::cublas_handle(), cuTransB, cuTransA,
+  //    N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
 }
 
 template <>
@@ -32,34 +220,44 @@ void caffe_gpu_gemm<double>(const CBLAS_TRANSPOSE TransA,
     const double alpha, const double* A, const double* B, const double beta,
     double* C) {
   // Note that cublas follows fortran order.
-  int lda = (TransA == CblasNoTrans) ? K : M;
-  int ldb = (TransB == CblasNoTrans) ? N : K;
-  cublasOperation_t cuTransA =
-      (TransA == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
-  cublasOperation_t cuTransB =
-      (TransB == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
-  CUBLAS_CHECK(cublasDgemm(Caffe::cublas_handle(), cuTransB, cuTransA,
-      N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
+	dim3 block(32, 32);
+  dim3 grid((N + 31) / 32, (M + 31) / 32);
+  if(TransA == CblasNoTrans){
+    if(TransB == CblasNoTrans) double_mat_mul_N_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+    else double_mat_mul_N_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  }
+  else{
+    if(TransB == CblasNoTrans) double_mat_mul_T_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+    else double_mat_mul_T_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  }
 }
 
 template <>
 void caffe_gpu_gemv<float>(const CBLAS_TRANSPOSE TransA, const int M,
     const int N, const float alpha, const float* A, const float* x,
     const float beta, float* y) {
-  cublasOperation_t cuTransA =
-      (TransA == CblasNoTrans) ? CUBLAS_OP_T : CUBLAS_OP_N;
-  CUBLAS_CHECK(cublasSgemv(Caffe::cublas_handle(), cuTransA, N, M, &alpha,
-      A, N, x, 1, &beta, y, 1));
+  //cublasOperation_t cuTransA =
+  //    (TransA == CblasNoTrans) ? CUBLAS_OP_T : CUBLAS_OP_N;
+  //CUBLAS_CHECK(cublasSgemv(Caffe::cublas_handle(), cuTransA, N, M, &alpha,
+  //    A, N, x, 1, &beta, y, 1));
+	dim3 block(256);
+  dim3 grid((N + 255) / 256);
+  if(TransA == CblasNoTrans) mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+  else mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
 }
 
 template <>
 void caffe_gpu_gemv<double>(const CBLAS_TRANSPOSE TransA, const int M,
     const int N, const double alpha, const double* A, const double* x,
     const double beta, double* y) {
-  cublasOperation_t cuTransA =
-      (TransA == CblasNoTrans) ? CUBLAS_OP_T : CUBLAS_OP_N;
-  CUBLAS_CHECK(cublasDgemv(Caffe::cublas_handle(), cuTransA, N, M, &alpha,
-      A, N, x, 1, &beta, y, 1));
+//  cublasOperation_t cuTransA =
+//      (TransA == CblasNoTrans) ? CUBLAS_OP_T : CUBLAS_OP_N;
+//  CUBLAS_CHECK(cublasDgemv(Caffe::cublas_handle(), cuTransA, N, M, &alpha,
+//      A, N, x, 1, &beta, y, 1));
+dim3 block(256);
+dim3 grid((N + 255) / 256);
+if(TransA == CblasNoTrans) double_mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+else double_mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
 }
 
 template <>
