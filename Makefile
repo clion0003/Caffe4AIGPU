@@ -178,7 +178,7 @@ ifneq ($(CPU_ONLY), 1)
 	LIBRARIES := cudart cublas curand
 endif
 
-LIBRARIES += glog gflags protobuf boost_system boost_filesystem m hdf5_hl hdf5 conv 
+LIBRARIES += glog gflags protobuf boost_system boost_filesystem m hdf5_hl hdf5 
 
 LIBRARY_DIRS += ./
 
@@ -328,6 +328,11 @@ endif
 ifeq ($(USE_CUDNN), 1)
 	LIBRARIES += cudnn
 	COMMON_FLAGS += -DUSE_CUDNN
+endif
+
+ifeq ($(USE_AIGPUACC), 1)
+	COMMON_FLAGS += -DUSE_AIGPUACC
+	LIBRARIES += aigpu_acc
 endif
 
 # NCCL acceleration configuration
