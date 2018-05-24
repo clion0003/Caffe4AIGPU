@@ -263,13 +263,13 @@ else double_mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
 template <>
 void caffe_gpu_axpy<float>(const int N, const float alpha, const float* X,
     float* Y) {
-  CUBLAS_CHECK(cublasSaxpy(Caffe::cublas_handle(), N, &alpha, X, 1, Y, 1));
+  //CUBLAS_CHECK(cublasSaxpy(Caffe::cublas_handle(), N, &alpha, X, 1, Y, 1));
 }
 
 template <>
 void caffe_gpu_axpy<double>(const int N, const double alpha, const double* X,
     double* Y) {
-  CUBLAS_CHECK(cublasDaxpy(Caffe::cublas_handle(), N, &alpha, X, 1, Y, 1));
+  //CUBLAS_CHECK(cublasDaxpy(Caffe::cublas_handle(), N, &alpha, X, 1, Y, 1));
 }
 
 void caffe_gpu_memcpy(const size_t N, const void* X, void* Y) {
@@ -280,32 +280,32 @@ void caffe_gpu_memcpy(const size_t N, const void* X, void* Y) {
 
 template <>
 void caffe_gpu_scal<float>(const int N, const float alpha, float *X) {
-  CUBLAS_CHECK(cublasSscal(Caffe::cublas_handle(), N, &alpha, X, 1));
+  //CUBLAS_CHECK(cublasSscal(Caffe::cublas_handle(), N, &alpha, X, 1));
 }
 
 template <>
 void caffe_gpu_scal<double>(const int N, const double alpha, double *X) {
-  CUBLAS_CHECK(cublasDscal(Caffe::cublas_handle(), N, &alpha, X, 1));
+  //CUBLAS_CHECK(cublasDscal(Caffe::cublas_handle(), N, &alpha, X, 1));
 }
 
 template <>
 void caffe_gpu_scal<float>(const int N, const float alpha, float* X,
                            cudaStream_t str) {
-  cudaStream_t initial_stream;
-  CUBLAS_CHECK(cublasGetStream(Caffe::cublas_handle(), &initial_stream));
-  CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), str));
-  CUBLAS_CHECK(cublasSscal(Caffe::cublas_handle(), N, &alpha, X, 1));
-  CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), initial_stream));
+  //cudaStream_t initial_stream;
+  //CUBLAS_CHECK(cublasGetStream(Caffe::cublas_handle(), &initial_stream));
+  //CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), str));
+  //CUBLAS_CHECK(cublasSscal(Caffe::cublas_handle(), N, &alpha, X, 1));
+  //CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), initial_stream));
 }
 
 template <>
 void caffe_gpu_scal<double>(const int N, const double alpha, double* X,
                             cudaStream_t str) {
-  cudaStream_t initial_stream;
-  CUBLAS_CHECK(cublasGetStream(Caffe::cublas_handle(), &initial_stream));
-  CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), str));
-  CUBLAS_CHECK(cublasDscal(Caffe::cublas_handle(), N, &alpha, X, 1));
-  CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), initial_stream));
+  //cudaStream_t initial_stream;
+  //CUBLAS_CHECK(cublasGetStream(Caffe::cublas_handle(), &initial_stream));
+  //CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), str));
+  //CUBLAS_CHECK(cublasDscal(Caffe::cublas_handle(), N, &alpha, X, 1));
+  //CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), initial_stream));
 }
 
 template <>
@@ -325,37 +325,37 @@ void caffe_gpu_axpby<double>(const int N, const double alpha, const double* X,
 template <>
 void caffe_gpu_dot<float>(const int n, const float* x, const float* y,
     float* out) {
-  CUBLAS_CHECK(cublasSdot(Caffe::cublas_handle(), n, x, 1, y, 1, out));
+  //CUBLAS_CHECK(cublasSdot(Caffe::cublas_handle(), n, x, 1, y, 1, out));
 }
 
 template <>
 void caffe_gpu_dot<double>(const int n, const double* x, const double* y,
     double * out) {
-  CUBLAS_CHECK(cublasDdot(Caffe::cublas_handle(), n, x, 1, y, 1, out));
+  //CUBLAS_CHECK(cublasDdot(Caffe::cublas_handle(), n, x, 1, y, 1, out));
 }
 
 template <>
 void caffe_gpu_asum<float>(const int n, const float* x, float* y) {
-  CUBLAS_CHECK(cublasSasum(Caffe::cublas_handle(), n, x, 1, y));
+  //CUBLAS_CHECK(cublasSasum(Caffe::cublas_handle(), n, x, 1, y));
 }
 
 template <>
 void caffe_gpu_asum<double>(const int n, const double* x, double* y) {
-  CUBLAS_CHECK(cublasDasum(Caffe::cublas_handle(), n, x, 1, y));
+  //CUBLAS_CHECK(cublasDasum(Caffe::cublas_handle(), n, x, 1, y));
 }
 
 template <>
 void caffe_gpu_scale<float>(const int n, const float alpha, const float *x,
                             float* y) {
-  CUBLAS_CHECK(cublasScopy(Caffe::cublas_handle(), n, x, 1, y, 1));
-  CUBLAS_CHECK(cublasSscal(Caffe::cublas_handle(), n, &alpha, y, 1));
+  //CUBLAS_CHECK(cublasScopy(Caffe::cublas_handle(), n, x, 1, y, 1));
+  //CUBLAS_CHECK(cublasSscal(Caffe::cublas_handle(), n, &alpha, y, 1));
 }
 
 template <>
 void caffe_gpu_scale<double>(const int n, const double alpha, const double *x,
                              double* y) {
-  CUBLAS_CHECK(cublasDcopy(Caffe::cublas_handle(), n, x, 1, y, 1));
-  CUBLAS_CHECK(cublasDscal(Caffe::cublas_handle(), n, &alpha, y, 1));
+  //CUBLAS_CHECK(cublasDcopy(Caffe::cublas_handle(), n, x, 1, y, 1));
+  //CUBLAS_CHECK(cublasDscal(Caffe::cublas_handle(), n, &alpha, y, 1));
 }
 
 template <typename Dtype>
@@ -611,47 +611,47 @@ DEFINE_AND_INSTANTIATE_GPU_UNARY_FUNC(sign, y[index] = (Dtype(0) < x[index])
 DEFINE_AND_INSTANTIATE_GPU_UNARY_FUNC(sgnbit, y[index] = signbit(x[index]));
 
 void caffe_gpu_rng_uniform(const int n, unsigned int* r) {
-  CURAND_CHECK(curandGenerate(Caffe::curand_generator(), r, n));
+  //CURAND_CHECK(curandGenerate(Caffe::curand_generator(), r, n));
 }
 
 template <>
 void caffe_gpu_rng_uniform<float>(const int n, const float a, const float b,
                                   float* r) {
-  CURAND_CHECK(curandGenerateUniform(Caffe::curand_generator(), r, n));
-  const float range = b - a;
-  if (range != static_cast<float>(1)) {
-    caffe_gpu_scal(n, range, r);
-  }
-  if (a != static_cast<float>(0)) {
-    caffe_gpu_add_scalar(n, a, r);
-  }
+  //CURAND_CHECK(curandGenerateUniform(Caffe::curand_generator(), r, n));
+  //const float range = b - a;
+  //if (range != static_cast<float>(1)) {
+  //  caffe_gpu_scal(n, range, r);
+  //}
+  //if (a != static_cast<float>(0)) {
+  //  caffe_gpu_add_scalar(n, a, r);
+  //}
 }
 
 template <>
 void caffe_gpu_rng_uniform<double>(const int n, const double a, const double b,
                                    double* r) {
-  CURAND_CHECK(curandGenerateUniformDouble(Caffe::curand_generator(), r, n));
-  const double range = b - a;
-  if (range != static_cast<double>(1)) {
-    caffe_gpu_scal(n, range, r);
-  }
-  if (a != static_cast<double>(0)) {
-    caffe_gpu_add_scalar(n, a, r);
-  }
+  //CURAND_CHECK(curandGenerateUniformDouble(Caffe::curand_generator(), r, n));
+  //const double range = b - a;
+  //if (range != static_cast<double>(1)) {
+  //  caffe_gpu_scal(n, range, r);
+  //}
+  //if (a != static_cast<double>(0)) {
+  //  caffe_gpu_add_scalar(n, a, r);
+  //}
 }
 
 template <>
 void caffe_gpu_rng_gaussian(const int n, const float mu, const float sigma,
                             float* r) {
-  CURAND_CHECK(
-      curandGenerateNormal(Caffe::curand_generator(), r, n, mu, sigma));
+  //CURAND_CHECK(
+  //    curandGenerateNormal(Caffe::curand_generator(), r, n, mu, sigma));
 }
 
 template <>
 void caffe_gpu_rng_gaussian(const int n, const double mu, const double sigma,
                             double* r) {
-  CURAND_CHECK(
-      curandGenerateNormalDouble(Caffe::curand_generator(), r, n, mu, sigma));
+  //CURAND_CHECK(
+  //    curandGenerateNormalDouble(Caffe::curand_generator(), r, n, mu, sigma));
 }
 
 }  // namespace caffe
