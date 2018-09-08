@@ -73,7 +73,7 @@ namespace caffe {
   }
 
   template <class T> 
-  __gloabl__ void mat_mat(int m, int k ,int n, T alpha, T beta, const T *a, const T *b, T *ab) {
+  __global__ void mat_mat(int m, int k ,int n, T alpha, T beta, const T *a, const T *b, T *ab) {
     
     int col = threadIdx.x;
     __shared__ T sm[4096]; 
