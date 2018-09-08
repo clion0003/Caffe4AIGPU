@@ -330,9 +330,9 @@ ifeq ($(USE_CUDNN), 1)
 	COMMON_FLAGS += -DUSE_CUDNN
 endif
 
-ifeq ($(USE_AIGPUACC), 1)
-	COMMON_FLAGS += -DUSE_AIGPUACC
-	LIBRARIES += aigpu_acc
+ifeq ($(USE_AIGPU), 1)
+	COMMON_FLAGS += -DUSE_AIGPU
+	LIBRARIES += aigpu
 endif
 
 # NCCL acceleration configuration
