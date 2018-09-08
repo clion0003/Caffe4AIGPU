@@ -8,6 +8,9 @@
 #include "caffe/common.hpp"
 #include "caffe/util/math_functions.hpp"
 
+#define Thread_num 36
+#define Block_num 1
+
 namespace caffe {
   __global__ void mat_mul_N_N(int m, int k ,int n, float alpha, float beta, const float *a, const float *b, float *ab) {
     // calculate the row & col index of the element
@@ -187,6 +190,90 @@ namespace caffe {
     }
   }
 
+
+// added by devil
+template <class T>
+__global__ void axpy_kernel(int n, const T *alpha, const T *x, int incx, T *y, int incy) {
+  // y [ j ] = α × x [ k ] + y [ j ] for i = 1 , … , n , k = 1 + ( i - 1 ) *  incx and j = 1 + ( i - 1 ) *  incy .
+  int idx = threadIdx.x;
+  T alpha_val = *alpha;
+
+	for(int i = idx; i < n; i += Thread_num) {
+		y[i * incy] += alpha_val * x[i * incx];
+  }
+  
+}
+
+template <class T>
+__global__ void dot_kernel(int n,  const T *x, int incx, const T *y, int incy, T *subsum) {
+  // ∑ i = 1 n ( x [ k ] × y [ j ] ) where k = 1 + ( i - 1 ) *  incx and j = 1 + ( i - 1 ) *  incy 
+
+  __shared__ T sm[Thread_num];
+	int idx = threadIdx.x;
+
+	T sum = 0;
+	for(int i = idx; i < n; i += Thread_num) {
+		sum += x[i * incx] * y[i * incy];
+	}
+  sm[idx] = sum;
+  
+  __syncthreads();
+  
+	if(idx == 0) {
+    sum = sm[0];
+		for(int i = 1; i < Thread_num; ++i) {
+			sum += sm[i];
+    }
+    *subsum = sum;
+	}
+}
+
+template <class T>
+__global__ void scal_kernel(int n, const T* alpha, T *x, int incx) {
+  // x [ j ] = α × x [ j ] for i = 1 , … , n and j = 1 + ( i - 1 ) *  incx . 
+	int idx = threadIdx.x;	
+  T alpha_val = *alpha;
+  
+	for(int i = idx; i < n; i+=Thread_num) {
+		x[i * incx] *= alpha_val;
+	}
+}
+
+template <class T>
+__global__ void copy_kernel(int n, const T *x, int incx, T *y, int incy) {
+  // y [ j ] = x [ k ] for i = 1 , … , n , k = 1 + ( i - 1 ) *  incx and j = 1 + ( i - 1 ) *  incy .
+	int idx = threadIdx.x;
+
+	for(int i = idx; i < n; i+=Thread_num) {
+		y[i * incy] = x[i * incx];
+	}
+}
+
+template <class T>
+__global__ void asum_kernel(int n, const T *x, int incx, T  *result) {
+  // ∑ i = 1 n | I m ( x [ j ] ) | + | R e ( x [ j ] ) | where j = 1 + ( i - 1 ) *  incx 
+	int idx = threadIdx.x;
+  __shared__ T sm[Thread_num];
+
+	T sum = 0;
+	for(int i = idx; i < n; i += Thread_num) {
+    T tmp = x[i*incx];
+		sum += (tmp>=0?tmp:-tmp);
+	}
+  sm[idx] = sum;
+  
+  __syncthreads();
+  
+	if(idx == 0) {
+    sum = sm[0];
+		for(int i = 1; i < Thread_num; ++i) {
+			sum += sm[i];
+    }
+    *result = sum;
+	}
+}
+
+
 template <>
 void caffe_gpu_gemm<float>(const CBLAS_TRANSPOSE TransA,
     const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
@@ -264,12 +351,14 @@ template <>
 void caffe_gpu_axpy<float>(const int N, const float alpha, const float* X,
     float* Y) {
   //CUBLAS_CHECK(cublasSaxpy(Caffe::cublas_handle(), N, &alpha, X, 1, Y, 1));
+  axpy_kernel<float> <<<Block_num, Thread_num>>> (N, &alpha, X, 1, Y, 1);
 }
 
 template <>
 void caffe_gpu_axpy<double>(const int N, const double alpha, const double* X,
     double* Y) {
   //CUBLAS_CHECK(cublasDaxpy(Caffe::cublas_handle(), N, &alpha, X, 1, Y, 1));
+  axpy_kernel<double> <<<Block_num, Thread_num>>> (N, &alpha, X, 1, Y, 1);
 }
 
 void caffe_gpu_memcpy(const size_t N, const void* X, void* Y) {
@@ -281,11 +370,13 @@ void caffe_gpu_memcpy(const size_t N, const void* X, void* Y) {
 template <>
 void caffe_gpu_scal<float>(const int N, const float alpha, float *X) {
   //CUBLAS_CHECK(cublasSscal(Caffe::cublas_handle(), N, &alpha, X, 1));
+  scal_kernel<float> <<<Block_num, Thread_num>>> (N, &alpha, X, 1);
 }
 
 template <>
 void caffe_gpu_scal<double>(const int N, const double alpha, double *X) {
   //CUBLAS_CHECK(cublasDscal(Caffe::cublas_handle(), N, &alpha, X, 1));
+  scal_kernel<double> <<<Block_num, Thread_num>>> (N, &alpha, X, 1);
 }
 
 template <>
@@ -326,22 +417,26 @@ template <>
 void caffe_gpu_dot<float>(const int n, const float* x, const float* y,
     float* out) {
   //CUBLAS_CHECK(cublasSdot(Caffe::cublas_handle(), n, x, 1, y, 1, out));
+		dot_kernel<float> <<<Block_num, Thread_num>>> (n, x, 1, y, 1, out);
 }
 
 template <>
 void caffe_gpu_dot<double>(const int n, const double* x, const double* y,
     double * out) {
   //CUBLAS_CHECK(cublasDdot(Caffe::cublas_handle(), n, x, 1, y, 1, out));
+		dot_kernel<double> <<<Block_num, Thread_num>>> (n, x, 1, y, 1, out);
 }
 
 template <>
 void caffe_gpu_asum<float>(const int n, const float* x, float* y) {
   //CUBLAS_CHECK(cublasSasum(Caffe::cublas_handle(), n, x, 1, y));
+  asum_kernel<float> <<<Block_num, Thread_num>>> (n, x, 1, y);
 }
 
 template <>
 void caffe_gpu_asum<double>(const int n, const double* x, double* y) {
   //CUBLAS_CHECK(cublasDasum(Caffe::cublas_handle(), n, x, 1, y));
+  asum_kernel<double> <<<Block_num, Thread_num>>> (n, x, 1, y);
 }
 
 template <>
@@ -349,6 +444,8 @@ void caffe_gpu_scale<float>(const int n, const float alpha, const float *x,
                             float* y) {
   //CUBLAS_CHECK(cublasScopy(Caffe::cublas_handle(), n, x, 1, y, 1));
   //CUBLAS_CHECK(cublasSscal(Caffe::cublas_handle(), n, &alpha, y, 1));
+  copy_kernel<float> <<<Block_num, Thread_num>>> (n, x, 1, y, 1);
+  scal_kernel<float> <<<Block_num, Thread_num>>> (n, &alpha, y, 1);
 }
 
 template <>
@@ -356,6 +453,8 @@ void caffe_gpu_scale<double>(const int n, const double alpha, const double *x,
                              double* y) {
   //CUBLAS_CHECK(cublasDcopy(Caffe::cublas_handle(), n, x, 1, y, 1));
   //CUBLAS_CHECK(cublasDscal(Caffe::cublas_handle(), n, &alpha, y, 1));
+  copy_kernel<double> <<<Block_num, Thread_num>>> (n, x, 1, y, 1);
+  scal_kernel<double> <<<Block_num, Thread_num>>> (n, &alpha, y, 1);
 }
 
 template <typename Dtype>
