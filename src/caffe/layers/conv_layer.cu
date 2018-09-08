@@ -10,11 +10,11 @@ namespace caffe {
 template <typename Dtype>
 void ConvolutionLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
-  std::cout << "hello from conv_layer.cu:forward" << std::endl;
+  //std::cout << "hello from conv_layer.cu:forward" << std::endl;
   const Dtype* weight = this->blobs_[0]->gpu_data();
   const int* kernel_shape_data = this->kernel_shape_.cpu_data();
   const int* stride_data = this->stride_.cpu_data();
-  std::cout<<kernel_shape_data[0]<<"stride=" << stride_data[0]<<std::endl;
+  //std::cout<<kernel_shape_data[0]<<"stride=" << stride_data[0]<<std::endl;
   if(kernel_shape_data[0] > 3 || stride_data[0] > 1){
     for (int i = 0; i < bottom.size(); ++i) {
       const Dtype* bottom_data = bottom[i]->gpu_data();
@@ -44,8 +44,11 @@ void ConvolutionLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
 template <typename Dtype>
 void ConvolutionLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
-  std::cout << "hello from conv_layer.cu:backward" << std::endl;
+  //std::cout << "hello from conv_layer.cu:backward" << std::endl;
   const Dtype* weight = this->blobs_[0]->gpu_data();
+  const int* kernel_shape_data = this->kernel_shape_.cpu_data();
+  const int* stride_data = this->stride_.cpu_data();
+  
   Dtype* weight_diff = this->blobs_[0]->mutable_gpu_diff();
   for (int i = 0; i < top.size(); ++i) {
     const Dtype* top_diff = top[i]->gpu_diff();

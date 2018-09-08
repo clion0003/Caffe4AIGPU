@@ -71,6 +71,36 @@ namespace caffe {
   
     }
   }
+
+  template <class T> 
+  __gloabl__ void mat_mat(int m, int k ,int n, T alpha, T beta, const T *a, const T *b, T *ab) {
+    
+    int col = threadIdx.x;
+    __shared__ T sm[4096]; 
+    for(int row=0;row<m;row++){
+      for(int i = threadIdx.x; i<k; i = i + blockDim.x){
+        sm[i] = a[k * row + i];
+      }
+      __syncthreads();
+
+      for(col = threadIdx.x; col < n; col = col + blockDim.x){
+        T result = 0;
+        for(int i = 0;i < k;i=i+8)
+        {
+          result += sm[i] * b[n * i + col];
+          result += sm[i+1] * b[n * i + n + col];
+          result += sm[i+2] * b[n * i + 2 * n + col];
+          result += sm[i+3] * b[n * i + 3 * n + col];
+          result += sm[i+4] * b[n * i + 4 * n + col];
+          result += sm[i+5] * b[n * i + 5 * n + col];
+          result += sm[i+6] * b[n * i + 6 * n + col];
+          result += sm[i+7] * b[n * i + 7 * n + col];
+        }
+        ab[row*n + col] = alpha * result + beta * ab[row*n + col];
+      }
+    }
+  
+  }
   
   
   __global__ void mat_vec_N(int m, int n, float alpha, float beta, const float *a, const float *x ,float *y) {
@@ -99,6 +129,34 @@ namespace caffe {
       y[row] = alpha * result + beta * y[row];
   
     }
+  }
+
+  template <class T> 
+  __global__ void mat_vec(int m, int n, T alpha, T beta, const T *a, const T *x ,T *y) {
+    __shared__ T sm[4096]; 
+    int row = threadIdx.x;
+    for(int i = threadIdx.x;i < n;i++)
+    {
+      sm[i] = x[i];
+    }
+    __syncthreads();
+
+    for(;row < m;row = row + blockDim.x){
+      T result = 0;
+      for(int i = 0; i < n; i = i + 8)
+      {
+        result += a[m * i + row] * sm[i];
+        result += a[m * i + m + row] * sm[i+1];
+        result += a[m * i + m * 2 + row] * sm[i+2];
+        result += a[m * i + m * 3 + row] * sm[i+3];
+        result += a[m * i + m * 4 + row] * sm[i+4];
+        result += a[m * i + m * 5 + row] * sm[i+5];
+        result += a[m * i + m * 6 + row] * sm[i+6];
+        result += a[m * i + m * 7 + row] * sm[i+7];
+      }
+      y[row] = alpha * result + beta * y[row];
+    }
+
   }
 
   __global__ void double_mat_mul_N_N(int m, int k ,int n, double alpha, double beta, const double *a, const double *b, double *ab) {
@@ -287,16 +345,18 @@ void caffe_gpu_gemm<float>(const CBLAS_TRANSPOSE TransA,
   //cublasOperation_t cuTransB =
   //    (TransB == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
       
-	dim3 block(32, 32);
-  dim3 grid((N + 31) / 32, (M + 31) / 32);
-  if(TransA == CblasNoTrans){
-    if(TransB == CblasNoTrans) mat_mul_N_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
-    else mat_mul_N_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
-  }
-  else{
-    if(TransB == CblasNoTrans) mat_mul_T_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
-    else mat_mul_T_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
-  }
+	//dim3 block(36, 1);
+  //dim3 grid(1, (M + 31) / 32);
+  //if(TransA == CblasNoTrans){
+  //  if(TransB == CblasNoTrans) mat_mul_N_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  //  else mat_mul_N_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  //}
+  //else{
+  //  if(TransB == CblasNoTrans) mat_mul_T_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  //  else mat_mul_T_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  //}
+
+  mat_mat<float> <<<Block_num, Thread_num>>> (M, K, N, alpha, beta, A, B, C);
   //CUBLAS_CHECK(cublasSgemm(Caffe::cublas_handle(), cuTransB, cuTransA,
   //    N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
 }
@@ -307,16 +367,17 @@ void caffe_gpu_gemm<double>(const CBLAS_TRANSPOSE TransA,
     const double alpha, const double* A, const double* B, const double beta,
     double* C) {
   // Note that cublas follows fortran order.
-	dim3 block(32, 32);
-  dim3 grid((N + 31) / 32, (M + 31) / 32);
-  if(TransA == CblasNoTrans){
-    if(TransB == CblasNoTrans) double_mat_mul_N_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
-    else double_mat_mul_N_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
-  }
-  else{
-    if(TransB == CblasNoTrans) double_mat_mul_T_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
-    else double_mat_mul_T_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
-  }
+	//dim3 block(32, 32);
+  //dim3 grid((N + 31) / 32, (M + 31) / 32);
+  //if(TransA == CblasNoTrans){
+  //  if(TransB == CblasNoTrans) double_mat_mul_N_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  //  else double_mat_mul_N_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  //}
+  //else{
+  //  if(TransB == CblasNoTrans) double_mat_mul_T_N << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  //  else double_mat_mul_T_T << <grid, block >> > (M, K, N, alpha, beta, A, B, C);
+  //}
+  mat_mat<double> <<<Block_num, Thread_num>>> (M, K, N, alpha, beta, A, B, C);
 }
 
 template <>
@@ -327,10 +388,11 @@ void caffe_gpu_gemv<float>(const CBLAS_TRANSPOSE TransA, const int M,
   //    (TransA == CblasNoTrans) ? CUBLAS_OP_T : CUBLAS_OP_N;
   //CUBLAS_CHECK(cublasSgemv(Caffe::cublas_handle(), cuTransA, N, M, &alpha,
   //    A, N, x, 1, &beta, y, 1));
-	dim3 block(256);
-  dim3 grid((N + 255) / 256);
-  if(TransA == CblasNoTrans) mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
-  else mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+	//dim3 block(256);
+  //dim3 grid((N + 255) / 256);
+  //if(TransA == CblasNoTrans) mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+  //else mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+  mat_vec<float> <<<Block_num, Thread_num>>> (M, N, alpha, beta, A, x, y);
 }
 
 template <>
@@ -341,10 +403,11 @@ void caffe_gpu_gemv<double>(const CBLAS_TRANSPOSE TransA, const int M,
 //      (TransA == CblasNoTrans) ? CUBLAS_OP_T : CUBLAS_OP_N;
 //  CUBLAS_CHECK(cublasDgemv(Caffe::cublas_handle(), cuTransA, N, M, &alpha,
 //      A, N, x, 1, &beta, y, 1));
-dim3 block(256);
-dim3 grid((N + 255) / 256);
-if(TransA == CblasNoTrans) double_mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
-else double_mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+//dim3 block(256);
+//dim3 grid((N + 255) / 256);
+//if(TransA == CblasNoTrans) double_mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+//else double_mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+  mat_vec<double> <<<Block_num, Thread_num>>> (M, N, alpha, beta, A, x, y);
 }
 
 template <>
@@ -382,6 +445,7 @@ void caffe_gpu_scal<double>(const int N, const double alpha, double *X) {
 template <>
 void caffe_gpu_scal<float>(const int N, const float alpha, float* X,
                            cudaStream_t str) {
+  scal_kernel<float> <<<Block_num, Thread_num>>> (N, &alpha, X, 1);
   //cudaStream_t initial_stream;
   //CUBLAS_CHECK(cublasGetStream(Caffe::cublas_handle(), &initial_stream));
   //CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), str));
@@ -392,6 +456,7 @@ void caffe_gpu_scal<float>(const int N, const float alpha, float* X,
 template <>
 void caffe_gpu_scal<double>(const int N, const double alpha, double* X,
                             cudaStream_t str) {
+  scal_kernel<double> <<<Block_num, Thread_num>>> (N, &alpha, X, 1);
   //cudaStream_t initial_stream;
   //CUBLAS_CHECK(cublasGetStream(Caffe::cublas_handle(), &initial_stream));
   //CUBLAS_CHECK(cublasSetStream(Caffe::cublas_handle(), str));
