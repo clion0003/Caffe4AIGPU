@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "caffe/layers/conv_layer.hpp"
-#include "conv/conv.hpp"
+#include "aigpu/aigpu.hpp"
 
 namespace caffe {  
 
