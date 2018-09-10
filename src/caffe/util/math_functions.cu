@@ -8,7 +8,7 @@
 #include "caffe/common.hpp"
 #include "caffe/util/math_functions.hpp"
 
-#define Thread_num 144
+#define Thread_num 36
 #define Block_num 1
 
 namespace caffe {
@@ -190,15 +190,27 @@ namespace caffe {
     }
   }
 
+__global__ void mat_vec(int m,int n,float alpha,float beta,const float *a,const float *x, float *y){
+	int row = threadIdx.x;
+	for(int index = row; index < m; index = index += Thread_num)
+	{
+		float result = 0.0;
+		for(int i=0;i < n;i++) result += a[index * n + i] * x[i];
+		y[index] = alpha * result + beta * y[index];
+			
+	}
+
+
+}
+
   // added by devil
 template <class T>
-__global__ void axpy_kernel(int n, const T *alpha, const T *x, int incx, T *y, int incy) {
+__global__ void axpy_kernel(int n, const T alpha, const T *x, int incx, T *y, int incy) {
   // y [ j ] = α × x [ k ] + y [ j ] for i = 1 , … , n , k = 1 + ( i - 1 ) *  incx and j = 1 + ( i - 1 ) *  incy .
   int idx = threadIdx.x;
-  T alpha_val = *alpha;
 
 	for(int i = idx; i < n; i += Thread_num) {
-		y[i * incy] += alpha_val * x[i * incx];
+		if(i<n)y[i] += alpha * x[i] + y[i];
   }
   
 }
@@ -328,7 +340,8 @@ void caffe_gpu_gemv<float>(const CBLAS_TRANSPOSE TransA, const int M,
   //    A, N, x, 1, &beta, y, 1));
 	dim3 block(256);
   dim3 grid((N + 255) / 256);
-  if(TransA == CblasNoTrans) mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+  if(TransA == CblasNoTrans) mat_vec <<< Block_num, 32 >>> (M, N, alpha, beta, A, x, y);
+  //if(TransA == CblasNoTrans) mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
   else mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
 }
 
@@ -342,7 +355,7 @@ void caffe_gpu_gemv<double>(const CBLAS_TRANSPOSE TransA, const int M,
 //      A, N, x, 1, &beta, y, 1));
 dim3 block(256);
 dim3 grid((N + 255) / 256);
-if(TransA == CblasNoTrans) double_mat_vec_N <<< grid, block >>> (M, N, alpha, beta, A, x, y);
+if(TransA == CblasNoTrans) double_mat_vec_N <<< Block_num, Thread_num >>> (M, N, alpha, beta, A, x, y);
 else double_mat_vec_T <<< grid, block >>> (M, N, alpha, beta, A, x, y);
 }
 
@@ -350,14 +363,14 @@ template <>
 void caffe_gpu_axpy<float>(const int N, const float alpha, const float* X,
     float* Y) {
   //CUBLAS_CHECK(cublasSaxpy(Caffe::cublas_handle(), N, &alpha, X, 1, Y, 1));
-  axpy_kernel<float> <<<Block_num, Thread_num>>> (N, &alpha, X, 1, Y, 1);
+  axpy_kernel<float> <<<Block_num, Thread_num>>> (N, alpha, X, 1, Y, 1);
 }
 
 template <>
 void caffe_gpu_axpy<double>(const int N, const double alpha, const double* X,
     double* Y) {
   //CUBLAS_CHECK(cublasDaxpy(Caffe::cublas_handle(), N, &alpha, X, 1, Y, 1));
-  axpy_kernel<double> <<<Block_num, Thread_num>>> (N, &alpha, X, 1, Y, 1);
+  axpy_kernel<double> <<<Block_num, Thread_num>>> (N, alpha, X, 1, Y, 1);
 }
 
 void caffe_gpu_memcpy(const size_t N, const void* X, void* Y) {
