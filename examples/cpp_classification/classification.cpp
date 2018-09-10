@@ -11,6 +11,10 @@
 #include <utility>
 #include <vector>
 
+
+//#include <gflags/gflags.h>
+//#include <glog/logging.h>
+
 #ifdef USE_OPENCV
 using namespace caffe;  // NOLINT(build/namespaces)
 using std::string;
@@ -233,7 +237,7 @@ int main(int argc, char** argv) {
               << " mean.binaryproto labels.txt img.jpg" << std::endl;
     return 1;
   }
-
+  FLAGS_alsologtostderr = 1;
   ::google::InitGoogleLogging(argv[0]);
 
   string model_file   = argv[1];
@@ -244,8 +248,8 @@ int main(int argc, char** argv) {
 
   string file = argv[5];
 
-  std::cout << "---------- Prediction for "
-            << file << " ----------" << std::endl;
+  LOG(INFO) << "---------- Prediction for "
+            << file << " ----------";
 
   cv::Mat img = cv::imread(file, -1);
   CHECK(!img.empty()) << "Unable to decode image " << file;
@@ -254,7 +258,7 @@ int main(int argc, char** argv) {
   /* Print the top N predictions. */
   for (size_t i = 0; i < predictions.size(); ++i) {
     Prediction p = predictions[i];
-    std::cout << std::fixed << std::setprecision(4) << p.second << " - \""
+    LOG(INFO) << std::fixed << std::setprecision(4) << p.second << " - \""
               << p.first << "\"" << std::endl;
   }
 }

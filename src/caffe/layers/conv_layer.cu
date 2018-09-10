@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "caffe/layers/conv_layer.hpp"
-#include "conv/conv.hpp"
+//#include "conv/conv.hpp"
 
 namespace caffe {  
 
@@ -15,7 +15,7 @@ void ConvolutionLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   const int* kernel_shape_data = this->kernel_shape_.cpu_data();
   const int* stride_data = this->stride_.cpu_data();
   std::cout<<kernel_shape_data[0]<<"stride=" << stride_data[0]<<std::endl;
-  if(kernel_shape_data[0] > 3 || stride_data[0] > 1){
+  //if(kernel_shape_data[0] > 3 || stride_data[0] > 1){
     for (int i = 0; i < bottom.size(); ++i) {
       const Dtype* bottom_data = bottom[i]->gpu_data();
       Dtype* top_data = top[i]->mutable_gpu_data();
@@ -28,17 +28,17 @@ void ConvolutionLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
         }
       }
     }
-  }
-  else{
-  for (int i = 0; i < bottom.size(); ++i) {
-    const Dtype* bottom_data = bottom[i]->gpu_data();
-    Dtype* top_data = top[i]->mutable_gpu_data();
-    for (int n = 0; n < this->num_; ++n) {
-      const Dtype* bias = this->blobs_[1]->gpu_data();
-      ConvKernel<Dtype>(this->layer_param_.name(), top_data, bottom_data, weight, bias);
-    }
-  }
-}
+  //}
+  //else{
+  //for (int i = 0; i < bottom.size(); ++i) {
+  //  const Dtype* bottom_data = bottom[i]->gpu_data();
+  //  Dtype* top_data = top[i]->mutable_gpu_data();
+  //  for (int n = 0; n < this->num_; ++n) {
+  //    const Dtype* bias = this->blobs_[1]->gpu_data();
+  //    ConvKernel<Dtype>(this->layer_param_.name(), top_data, bottom_data, weight, bias);
+  //  }
+  //}
+//}
 }
 
 template <typename Dtype>
