@@ -77,6 +77,8 @@ namespace caffe {
     
     int col = threadIdx.x;
     //__shared__ T sm[4096]; 
+    int remind = k%16;
+    k = k-remind;
     for(int row=0;row<m;row++){
       //for(int i = threadIdx.x; i<k; i = i + blockDim.x){
       //  sm[i] = a[k * row + i];
@@ -85,7 +87,8 @@ namespace caffe {
 
       for(col = threadIdx.x; col < n; col = col + blockDim.x){
         T result = 0;
-        for(int i = 0;i < k;i=i+8)
+        int i = 0;
+        for(;i < k;i=i+16)
         {
           result += a[k * row + i] * b[n * i + col];
           result += a[k * row + i + 1] * b[n * i + n + col];
@@ -95,7 +98,17 @@ namespace caffe {
           result += a[k * row + i + 5] * b[n * i + 5 * n + col];
           result += a[k * row + i + 6] * b[n * i + 6 * n + col];
           result += a[k * row + i + 7] * b[n * i + 7 * n + col];
+          result += a[k * row + i + 8] * b[n * i + 8 * n + col];
+          result += a[k * row + i + 9] * b[n * i + 9 * n + col];
+          result += a[k * row + i + 10] * b[n * i + 10 * n + col];
+          result += a[k * row + i + 11] * b[n * i + 11 * n + col];
+          result += a[k * row + i + 12] * b[n * i + 12 * n + col];
+          result += a[k * row + i + 13] * b[n * i + 13 * n + col];
+          result += a[k * row + i + 14] * b[n * i + 14 * n + col];
+          result += a[k * row + i + 15] * b[n * i + 15 * n + col];
         }
+        for(;i<k+remind;i++)result += a[k * row + i] * b[n * i + col];
+
         ab[row*n + col] = alpha * result + beta * ab[row*n + col];
       }
     }
@@ -134,9 +147,12 @@ namespace caffe {
   template <class T> 
   __global__ void mat_vec(int m, int n, T alpha, T beta, const T *a, const T *x ,T *y) {
     int row = threadIdx.x;
+    int remind = n%16;
+    n = n-remind;
     for(;row < m;row = row + blockDim.x){
       T result = 0;
-      for(int i = 0; i < n; i = i + 8)
+      int i = 0;
+      for(; i < n; i = i + 16)
       {
         result += a[m * i + row] * x[i];
         result += a[m * i + m + row] * x[i+1];
@@ -146,7 +162,20 @@ namespace caffe {
         result += a[m * i + m * 5 + row] * x[i+5];
         result += a[m * i + m * 6 + row] * x[i+6];
         result += a[m * i + m * 7 + row] * x[i+7];
+        result += a[m * i + m * 8 + row] * x[i+8];
+        result += a[m * i + m * 9 + row] * x[i+9];
+        result += a[m * i + m * 10 + row] * x[i+10];
+        result += a[m * i + m * 11 + row] * x[i+11];
+        result += a[m * i + m * 12 + row] * x[i+12];
+        result += a[m * i + m * 13 + row] * x[i+13];
+        result += a[m * i + m * 14 + row] * x[i+14];
+        result += a[m * i + m * 15 + row] * x[i+15];
       }
+      for(;i<n+remind;i++)
+      {
+        result += a[m * i + row] * x[i];
+      }
+
       y[row] = alpha * result + beta * y[row];
     }
 
