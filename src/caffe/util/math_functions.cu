@@ -83,7 +83,7 @@ namespace caffe {
       //for(int i = threadIdx.x; i<k; i = i + blockDim.x){
       //  sm[i] = a[k * row + i];
       //}
-      __syncthreads();
+      //__syncthreads();
 
       for(col = threadIdx.x; col < n; col = col + blockDim.x){
         T result = 0;
