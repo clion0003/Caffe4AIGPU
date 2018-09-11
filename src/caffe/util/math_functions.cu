@@ -8,7 +8,7 @@
 #include "caffe/common.hpp"
 #include "caffe/util/math_functions.hpp"
 
-#define Thread_num 36
+#define Thread_num 144
 #define Block_num 1
 
 namespace caffe {
