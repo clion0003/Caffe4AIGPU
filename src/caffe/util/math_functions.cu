@@ -76,25 +76,25 @@ namespace caffe {
   __global__ void mat_mat(int m, int k ,int n, T alpha, T beta, const T *a, const T *b, T *ab) {
     
     int col = threadIdx.x;
-    __shared__ T sm[4096]; 
+    //__shared__ T sm[4096]; 
     for(int row=0;row<m;row++){
-      for(int i = threadIdx.x; i<k; i = i + blockDim.x){
-        sm[i] = a[k * row + i];
-      }
+      //for(int i = threadIdx.x; i<k; i = i + blockDim.x){
+      //  sm[i] = a[k * row + i];
+      //}
       __syncthreads();
 
       for(col = threadIdx.x; col < n; col = col + blockDim.x){
         T result = 0;
         for(int i = 0;i < k;i=i+8)
         {
-          result += sm[i] * b[n * i + col];
-          result += sm[i+1] * b[n * i + n + col];
-          result += sm[i+2] * b[n * i + 2 * n + col];
-          result += sm[i+3] * b[n * i + 3 * n + col];
-          result += sm[i+4] * b[n * i + 4 * n + col];
-          result += sm[i+5] * b[n * i + 5 * n + col];
-          result += sm[i+6] * b[n * i + 6 * n + col];
-          result += sm[i+7] * b[n * i + 7 * n + col];
+          result += a[k * row + i] * b[n * i + col];
+          result += a[k * row + i + 1] * b[n * i + n + col];
+          result += a[k * row + i + 2] * b[n * i + 2 * n + col];
+          result += a[k * row + i + 3] * b[n * i + 3 * n + col];
+          result += a[k * row + i + 4] * b[n * i + 4 * n + col];
+          result += a[k * row + i + 5] * b[n * i + 5 * n + col];
+          result += a[k * row + i + 6] * b[n * i + 6 * n + col];
+          result += a[k * row + i + 7] * b[n * i + 7 * n + col];
         }
         ab[row*n + col] = alpha * result + beta * ab[row*n + col];
       }
@@ -133,26 +133,19 @@ namespace caffe {
 
   template <class T> 
   __global__ void mat_vec(int m, int n, T alpha, T beta, const T *a, const T *x ,T *y) {
-    __shared__ T sm[4096]; 
     int row = threadIdx.x;
-    for(int i = threadIdx.x;i < n;i++)
-    {
-      sm[i] = x[i];
-    }
-    __syncthreads();
-
     for(;row < m;row = row + blockDim.x){
       T result = 0;
       for(int i = 0; i < n; i = i + 8)
       {
-        result += a[m * i + row] * sm[i];
-        result += a[m * i + m + row] * sm[i+1];
-        result += a[m * i + m * 2 + row] * sm[i+2];
-        result += a[m * i + m * 3 + row] * sm[i+3];
-        result += a[m * i + m * 4 + row] * sm[i+4];
-        result += a[m * i + m * 5 + row] * sm[i+5];
-        result += a[m * i + m * 6 + row] * sm[i+6];
-        result += a[m * i + m * 7 + row] * sm[i+7];
+        result += a[m * i + row] * x[i];
+        result += a[m * i + m + row] * x[i+1];
+        result += a[m * i + m * 2 + row] * x[i+2];
+        result += a[m * i + m * 3 + row] * x[i+3];
+        result += a[m * i + m * 4 + row] * x[i+4];
+        result += a[m * i + m * 5 + row] * x[i+5];
+        result += a[m * i + m * 6 + row] * x[i+6];
+        result += a[m * i + m * 7 + row] * x[i+7];
       }
       y[row] = alpha * result + beta * y[row];
     }
