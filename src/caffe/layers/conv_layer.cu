@@ -34,8 +34,13 @@ void ConvolutionLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     const Dtype* bottom_data = bottom[i]->gpu_data();
     Dtype* top_data = top[i]->mutable_gpu_data();
     for (int n = 0; n < this->num_; ++n) {
-      const Dtype* bias = this->blobs_[1]->gpu_data();
-      ConvKernel<Dtype>(this->layer_param_.name(), top_data, bottom_data, weight, bias);
+      if (this->bias_term_)
+      {
+	const Dtype* bias = this->blobs_[1]->gpu_data();
+      	ConvKernel<Dtype>(this->layer_param_.name(), top_data, bottom_data, weight, bias);
+      }
+      else     
+      	ConvKernel<Dtype>(this->layer_param_.name(), top_data, bottom_data, weight, weight);
     }
   }
 }
